@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Capital Protocol — Emil Skriver</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:14px;scroll-behavior:smooth}
+    body{background:#07090f;color:#d4d9e8;font-family:'JetBrains Mono',monospace;min-height:100vh}
+    body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(15,25,50,0.6) 0%,transparent 70%);pointer-events:none;z-index:0}
+    #root{position:relative;z-index:1}
+    ::-webkit-scrollbar{width:3px;height:3px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#1e2a40;border-radius:2px}
+    input[type=number]{-moz-appearance:textfield}
+    input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+    input[type=range]{-webkit-appearance:none;appearance:none;height:2px;background:#1a2438;outline:none;cursor:pointer}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;border-radius:50%;cursor:pointer;border:1px solid #07090f}
+    .card{background:#0c0f1a;border:1px solid #182030;border-radius:10px;padding:18px 20px;position:relative;transition:border-color 0.2s}
+    .card:hover{border-color:#243350}
+    .card-gold{border-color:rgba(196,148,58,0.25)}
+    .card-gold::after{content:'';position:absolute;top:0;left:20px;right:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(196,148,58,0.5),transparent)}
+    .card-ice{border-color:rgba(90,175,195,0.2)}
+    .card-violet{border-color:rgba(120,100,220,0.2)}
+    .card-red{border-color:rgba(180,70,80,0.25)}
+    .card-green{border-color:rgba(70,170,120,0.25)}
+    .lbl{font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:#4a5570;font-family:'JetBrains Mono',monospace}
+    .num{font-family:'Cormorant Garamond',serif;font-weight:400}
+    .num-bold{font-family:'Cormorant Garamond',serif;font-weight:600}
+    .badge{font-family:'JetBrains Mono',monospace;font-size:7px;letter-spacing:0.1em;padding:2px 7px;border-radius:3px}
+    .tab-btn{font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:0.14em;text-transform:uppercase;background:none;border:none;padding:12px 15px;cursor:pointer;transition:color 0.15s;position:relative;white-space:nowrap}
+    .btn{cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.06em;border-radius:5px;padding:4px 10px;transition:all 0.15s;background:transparent}
+    .btn:hover{filter:brightness(1.2)}
+    .fade-in{animation:fadeUp 0.18s ease both}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+    .row-hover{transition:background 0.12s;border-radius:5px}
+    .row-hover:hover{background:rgba(24,32,50,0.5)}
+    .metric-card:hover{border-color:rgba(196,148,58,0.35)!important;box-shadow:0 0 24px rgba(196,148,58,0.04)}
+    .pulse{animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+    .sig-card{background:#0a0d17;border:1px solid #182030;border-radius:8px;padding:12px 14px;cursor:pointer;transition:border-color 0.15s}
+    .sig-card:hover,.sig-card.sel{border-color:#2e4060}
+    .sig-card.sel{background:#0e1220}
+    .regime-bar-track{height:5px;background:#1a2438;border-radius:3px;overflow:hidden}
+    .alloc-bar-track{height:7px;background:#1a2438;border-radius:4px;overflow:hidden}
+    .tag{font-size:8px;padding:1px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;letter-spacing:0.06em}
+    input[type=number].ninput{background:#07090f;border:1px solid #182030;border-radius:5px;color:#d4d9e8;font-family:'JetBrains Mono',monospace;font-size:11px;padding:4px 7px;outline:none;transition:border-color 0.15s;width:100%;text-align:right}
+    input[type=number].ninput:focus{border-color:rgba(196,148,58,0.5)}
+    select.sel-input{background:#07090f;border:1px solid #182030;border-radius:5px;color:#d4d9e8;font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 7px;outline:none;width:100%;cursor:pointer}
+    .hormuz-bar{height:3px;background:#1a2438;border-radius:2px;overflow:hidden;margin-top:4px}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback}=React;
+
+// ── COLOUR PALETTE ──────────────────────────────────────────────────────────
+const C={
+  bg:"#07090f",surface:"#0a0d17",card:"#0c0f1a",border:"#182030",
+  gold:"#c4943a",goldLight:"#e0b85a",goldDim:"#5a3f12",
+  ice:"#5aafC3",red:"#b44650",green:"#46aa78",violet:"#7864dc",
+  text:"#d4d9e8",muted:"#4a5570",dim:"#1e2a3e",
+  amber:"#b87830",teal:"#3a9488",
+};
+
+// ── FORMATTERS ───────────────────────────────────────────────────────────────
+const fmt=n=>new Intl.NumberFormat("da-DK").format(Math.round(n));
+const fmtK=n=>n>=1000000?`${(n/1000000).toFixed(2)}M`:`${Math.round(n/1000)}k`;
+const pct=(a,b)=>b===0?0:Math.round((a/b)*100);
+const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const load=(k,fb)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb}catch(e){return fb}};
+
+// ── MACRO SIGNAL ENGINE ──────────────────────────────────────────────────────
+// FRED API key placeholder — user can add their own free key from fred.stlouisfed.org
+// Without a key, signals use manually-set values from localStorage
+const FRED_KEY = load("cs_fred_key","");
+
+const SIGNAL_DEFS = [
+  {
+    id:"liq",label:"FED Net Liquidity",unit:"T USD",pillar:"Liquidity",
+    pillarColor:C.ice,weight:18,
+    description:"Fed reserves + TGA drawdown − ON RRP. Steno's #1 risk asset driver. Pain threshold ~5.9T (drops to ~5.7T post-eSLR reform Apr 2026). SOFR-EFFR normalization below zero = leverage conditions improving. Source: FRED (WALCL, WTREGEN, RRPONTSYD).",
+    fredSeries:null,// computed from 3 series — use manual override
+    thresholds:[{v:6.1,c:"green"},{v:5.9,c:"amber"},{v:0,c:"red"}],
+    score:v=>v>=6.1?95:v>=5.9?70:v>=5.7?50:v>=5.5?30:12,
+    defaultVal:5.82,
+  },
+  {
+    id:"sofr",label:"SOFR-EFFR Spread",unit:"bps",pillar:"Liquidity",
+    pillarColor:C.ice,weight:10,
+    description:"Secured Overnight Financing Rate minus Effective Fed Funds Rate. Normal = negative (SOFR < EFFR). When spread spikes above +5bps = funding stress — hedge funds de-gross, BTC/MSTR most vulnerable. Now back below 0 = leverage conditions normalised. Source: FRED (SOFR, FEDFUNDS).",
+    fredSeries:"SOFR",
+    thresholds:[{v:0,c:"red"},{v:-2,c:"amber"},{v:-999,c:"green"}],
+    score:v=>v<=-3?95:v<0?70:v<=3?40:v<=8?20:8,
+    defaultVal:-2,
+  },
+  {
+    id:"ism",label:"ISM Mfg PMI",unit:"",pillar:"Growth",
+    pillarColor:C.green,weight:18,
+    description:"US manufacturing activity index. Primary driver of SEMI allocation — capex cycle leads semiconductor demand by ~2 quarters. Steno nowcast: eSLR + bonus depreciation reopening = ISM recovery expected. Above 52 = expansion. Source: ISM / FRED (MANEMP).",
+    fredSeries:"MANEMP",
+    thresholds:[{v:52,c:"green"},{v:48,c:"amber"},{v:0,c:"red"}],
+    score:v=>v>=52?100:v>=50?72:v>=48?48:v>=45?26:10,
+    defaultVal:49.8,
+  },
+  {
+    id:"korea",label:"Korea Exports",unit:"% YoY",pillar:"Leading",
+    pillarColor:C.teal,weight:12,
+    description:"South Korea export growth — 4–8 week leading indicator for ISM Manufacturing (Steno Research). Tightly coupled to global semiconductor demand (DRAM, memory). Negative = warn on SEMI expansion even if current ISM OK. Steno memo: +150% in 2025 before Hormuz crisis. Source: Korean Customs Service (manual update monthly).",
+    fredSeries:null,
+    thresholds:[{v:5,c:"green"},{v:0,c:"amber"},{v:-999,c:"red"}],
+    score:v=>v>=8?95:v>=3?75:v>=0?52:v>=-3?34:15,
+    defaultVal:-2.1,
+  },
+  {
+    id:"inflation",label:"CPI/PCE Trend",unit:"Δ spread",pillar:"Inflation",
+    pillarColor:C.amber,weight:14,
+    description:"Direction of CPI-PCE spread (monthly delta). When spread falls = inflation declining = bullish for long-duration tech multiples. Distinguish supply-shock inflation (Hormuz/commodities) from demand-pull. Supply shock = higher penalty. Source: FRED (CPIAUCSL, PCEPI). Current regime: Steno nowcast ~15-17bps/mo, below consensus.",
+    fredSeries:null,
+    thresholds:[{v:0.05,c:"red"},{v:-0.05,c:"amber"},{v:-999,c:"green"}],
+    score:v=>v<=-0.1?92:v<0?68:v===0?48:v<=0.1?28:10,
+    defaultVal:-0.12,
+  },
+  {
+    id:"rate_dir",label:"Fed Rate Direction",unit:"% 3M Δ",pillar:"Rates",
+    pillarColor:C.amber,weight:14,
+    description:"Change in effective fed funds rate over trailing 3 months. Rate cuts expand multiples on long-duration growth assets. Separate from inflation trend — captures policy stance independently. Steno model flipped USD positive + bond positive = unusual but confirms US cycle outperforming peers. Source: FRED (FEDFUNDS).",
+    fredSeries:"FEDFUNDS",
+    thresholds:[{v:0.1,c:"red"},{v:-0.1,c:"amber"},{v:-999,c:"green"}],
+    score:v=>v<=-0.25?90:v<0?65:v===0?45:v<=0.25?25:10,
+    defaultVal:-0.25,
+  },
+  {
+    id:"sox",label:"SOX/SPX Trend",unit:"vs 20W MA",pillar:"Momentum",
+    pillarColor:C.violet,weight:16,
+    description:"Philadelphia Semiconductor Index relative to S&P 500, versus its 20-week moving average. Above 1.0 = SOX outperforming = SEMI weight expansion confirmed. Steno: 'early but improving sentiment for Tech including Semiconductors.' Primary price-action confirmation for SEMI allocation. Source: Yahoo Finance (^SOX, ^GSPC weekly).",
+    fredSeries:null,
+    thresholds:[{v:1.02,c:"green"},{v:0.97,c:"amber"},{v:0,c:"red"}],
+    score:v=>v>=1.05?95:v>=1.0?65:v>=0.97?40:20,
+    defaultVal:1.04,
+  },
+  {
+    id:"qqq_acwi",label:"QQQ/ACWI Trend",unit:"vs 26W MA",pillar:"Momentum",
+    pillarColor:C.violet,weight:8,
+    description:"NASDAQ-100 relative to ACWI vs 26-week moving average. Above MA = growth premium intact = NASDAQ-100 allocation justified vs plain ACWI. Also proxy for US regime vs global (rising DXY + QQQ/ACWI outperform = US decoupling). Source: Yahoo Finance (QQQ, ACWI weekly).",
+    fredSeries:null,
+    thresholds:[{v:1.01,c:"green"},{v:0.98,c:"amber"},{v:0,c:"red"}],
+    score:v=>v>=1.02?90:v>=1.0?65:v>=0.97?40:20,
+    defaultVal:0.97,
+  },
+];
+
+const REGIMES=[
+  {min:75,label:"Full Risk-On",cls:"green",acwi:40,nasdaq:35,semi:25,desc:"Liquidity expanding + growth accelerating + SEMI momentum confirmed. Full satellite allocation justified."},
+  {min:52,label:"Cautious Growth",cls:"amber",acwi:55,nasdaq:30,semi:15,desc:"Mixed signals — growth OK but liquidity or Korea exports flagging softness. Hold core, reduce satellites toward midpoint."},
+  {min:32,label:"Defensive",cls:"red",acwi:70,nasdaq:25,semi:5,desc:"Liquidity contraction or ISM sub-48. Trim SEMI to near-floor. ACWI absorbs weight."},
+  {min:0,label:"Stress",cls:"red",acwi:85,nasdaq:15,semi:0,desc:"Liquidity below pain + Korea negative + ISM contraction. Zero SEMI. Preserve capital."},
+];
+
+const ACC_ADJ={
+  ask:{acwi:0,nasdaq:0,semi:0},
+  pension:{acwi:-10,nasdaq:-5,semi:15},
+  taxable:{acwi:10,nasdaq:0,semi:-10},
+};
+const ACC_NOTES={
+  ask:"ASK — 17% lagerbeskatning annually on all gains. MSTR managed separately via Atreidis signal. Internal reallocation within ASK is always unrestricted and never counts as new deposit.",
+  pension:"Ratepension — 15.3% PAL. Pension gets +15% SEMI tilt vs ASK baseline, justified by long horizon and lower tax drag. Current split: ~70% SEMI / 30% Amundi MSCI World.",
+  taxable:"Taxable — realisationsprincip for individual equities. Express SEMI/semi exposure via NVDA/TSMC directly, NOT via SEMI ETF (which incurs lagerbeskatning in taxable). Avoid new ETF positions here.",
+};
+
+// ── EXPORT / IMPORT ──────────────────────────────────────────────────────────
+function exportData(state){
+  const blob=new Blob([JSON.stringify({version:2,exportedAt:new Date().toISOString(),...state},null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download="capital-protocol-data.json";a.click();URL.revokeObjectURL(url);
+}
+function importData(e,setters){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.salaryHistory)setters.setSalaryHistory(d.salaryHistory);
+      if(d.freelanceHistory)setters.setFreelanceHistory(d.freelanceHistory);
+      if(d.accounts)setters.setAccounts(d.accounts);
+      if(d.btcExit)setters.setBtcExit(d.btcExit);
+      if(d.mstrExit)setters.setMstrExit(d.mstrExit);
+      if(d.assumptions)setters.setA(d.assumptions);
+      if(d.signalOverrides)setters.setSignalOverrides(d.signalOverrides);
+      if(d.manualFlags)setters.setManualFlags(d.manualFlags);
+      alert("Imported successfully.");
+    }catch(err){alert("Import failed: "+err.message);}
+    e.target.value="";
+  };
+  reader.readAsText(file);
+}
+
+// ── PROJECTION ENGINE ────────────────────────────────────────────────────────
+function runProjection(accounts,a,months,salaryHistory,freelanceHistory){
+  const scenarios={
+    bear:{eq:a.bearEquity/100,btcMult:a.bearBTC,mstrMult:a.bearMSTR},
+    base:{eq:a.baseEquity/100,btcMult:a.baseBTC,mstrMult:a.baseMSTR},
+    bull:{eq:a.bullEquity/100,btcMult:a.bullBTC,mstrMult:a.bullMSTR},
+  };
+  function getInvestable(m){
+    const sorted=[...salaryHistory].sort((a,b)=>a.month-b.month);
+    let cur=sorted[0];
+    for(const s of sorted){if(s.month<=m)cur=s;else break;}
+    return Math.max(0,cur.netSalary-cur.fixedCosts);
+  }
+  function getFL(yr){const e=freelanceHistory.find(e=>e.year===yr);return e?e.amount:0;}
+  const all=[];
+  for(const[sk,s]of Object.entries(scenarios)){
+    let ask=accounts.ask,nord=accounts.nordnetPension,dan=accounts.danicaPension;
+    let ald=accounts.aldersopsparing,btc=accounts.btc,mstr=accounts.mstr||0;
+    let tax=accounts.taxable,liq=accounts.liquidSavings;
+    let askDep=0;
+    for(let m=0;m<=months;m++){
+      const mo=m%12;const calYear=2026+Math.floor(m/12);
+      const mr=Math.pow(1+s.eq,1/12)-1;const bmr=Math.pow(1+s.eq*0.65,1/12)-1;
+      ask*=1+mr;nord*=1+mr;dan*=1+mr;ald*=1+mr;tax*=1+mr;btc*=1+bmr;mstr*=1+bmr;
+      if(m===24){btc*=s.btcMult;mstr*=s.mstrMult;}
+      nord+=a.pensionMonthly;dan+=a.employerPension;ald+=8900/12;
+      const inv=getInvestable(m);
+      const room=Math.max(0,a.askTotalLimit-askDep);
+      const dep=Math.min(Math.min(a.askMonthly,inv),room);
+      ask+=dep;askDep+=dep;
+      btc+=(Math.min(a.askMonthly,inv)-dep)*0.7;
+      if(mo===5){const fl=getFL(calYear);const toAsk=Math.min(fl,Math.max(0,a.askTotalLimit-askDep));ask+=toAsk;askDep+=toAsk;btc+=(fl-toAsk)*0.7;}
+      liq+=a.apartmentMonthly;
+      const total=ask+nord+dan+ald+btc+mstr+tax+liq;
+      if(m%3===0||m===months){
+        const yr=2026+Math.floor(m/12);
+        all.push({m,scenario:sk,label:mo===0?`${yr}`:mo===6?`${yr}.5`:"",total:Math.round(total)});
+      }
+    }
+  }
+  return all;
+}
+function getMerged(data){
+  return[...new Set(data.map(d=>d.m))].map(m=>{
+    const b=data.find(d=>d.m===m&&d.scenario==="bear");
+    const ba=data.find(d=>d.m===m&&d.scenario==="base");
+    const bu=data.find(d=>d.m===m&&d.scenario==="bull");
+    return{m,label:(ba&&ba.label)||"",bear:(b&&b.total)||0,base:(ba&&ba.total)||0,bull:(bu&&bu.total)||0};
+  });
+}
+
+// ── UI ATOMS ─────────────────────────────────────────────────────────────────
+const Lbl=({children,style})=><p className="lbl" style={{marginBottom:8,...style}}>{children}</p>;
+
+function NInput({label,value,onChange,suffix="DKK",color=C.gold}){
+  return(
+    <div style={{marginBottom:10}}>
+      {label&&<span className="lbl" style={{display:"block",marginBottom:3}}>{label}</span>}
+      <div style={{display:"flex",alignItems:"center",gap:5,background:C.bg,border:`1px solid ${C.border}`,borderRadius:5,padding:"4px 7px"}}>
+        <input type="number" className="ninput" value={value} onChange={e=>onChange(Number(e.target.value))}
+          style={{border:"none",background:"none",color,outline:"none",padding:0,fontSize:12}}/>
+        <span className="lbl" style={{marginBottom:0,flexShrink:0}}>{suffix}</span>
+      </div>
+    </div>
+  );
+}
+
+function Slider({label,value,onChange,min,max,step=0.5,suffix="%",color=C.gold}){
+  return(
+    <div style={{marginBottom:13}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+        <span className="lbl" style={{marginBottom:0}}>{label}</span>
+        <span style={{color,fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>{value}{suffix}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={e=>onChange(Number(e.target.value))}
+        style={{width:"100%",accentColor:color}}/>
+    </div>
+  );
+}
+
+function Dot({color,size=7,pulse=false}){
+  return <span style={{display:"inline-block",width:size,height:size,borderRadius:"50%",background:color,flexShrink:0,boxShadow:pulse?`0 0 6px ${color}`:undefined}} className={pulse?"pulse":""}/>;
+}
+
+function Pill({label,color,bg}){
+  return <span className="badge" style={{background:bg||`${color}18`,color,border:`1px solid ${color}30`}}>{label}</span>;
+}
+
+// ── DONUT CHART ──────────────────────────────────────────────────────────────
+function Pie2({data}){
+  const size=90,cx=45,cy=45,r=32,ri=19,circ=2*Math.PI*r;
+  let offset=0;
+  const slices=data.map(d=>{const s={...d,offset,dash:(d.value/100)*circ};offset+=s.dash;return s;});
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:14}}>
+      <svg width={size} height={size} style={{flexShrink:0}}>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={C.dim} strokeWidth={r-ri}/>
+        {slices.map((s,i)=>(
+          <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth={r-ri}
+            strokeDasharray={`${s.dash} ${circ-s.dash}`} strokeDashoffset={circ/4-s.offset}/>
+        ))}
+      </svg>
+      <div style={{flex:1}}>
+        {data.map((d,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:4}}>
+            <span style={{width:6,height:6,borderRadius:1.5,background:d.color,flexShrink:0,display:"inline-block"}}/>
+            <span style={{color:C.muted,fontSize:9,fontFamily:"'JetBrains Mono',monospace",flex:1}}>{d.label}</span>
+            <span style={{color:d.color,fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>{d.value}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── SVG LINE CHART ───────────────────────────────────────────────────────────
+function SVGLineChart({data,target=1000000}){
+  const W=700,H=200,PL=55,PR=20,PT=14,PB=30;
+  const cw=W-PL-PR,ch=H-PT-PB;
+  if(!data||!data.length)return null;
+  const maxVal=Math.max(...data.map(d=>d.bull),target)*1.08;
+  const minVal=0;
+  const xOf=i=>(i/(data.length-1))*cw+PL;
+  const yOf=v=>ch-((v-minVal)/(maxVal-minVal))*ch+PT;
+  const line=key=>data.map((d,i)=>`${i===0?"M":"L"}${xOf(i).toFixed(1)},${yOf(d[key]).toFixed(1)}`).join(" ");
+  const area=key=>`${line(key)} L${xOf(data.length-1)},${H-PB} L${PL},${H-PB} Z`;
+  const yTicks=[0,250000,500000,750000,1000000,1250000].filter(v=>v<=maxVal*1.05);
+  const labeled=data.filter(d=>d.label);
+  return(
+    <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",height:"auto",display:"block"}}>
+      <defs>
+        <linearGradient id="gbull" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.green} stopOpacity="0.18"/><stop offset="100%" stopColor={C.green} stopOpacity="0.01"/></linearGradient>
+        <linearGradient id="gbase" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.gold} stopOpacity="0.14"/><stop offset="100%" stopColor={C.gold} stopOpacity="0.01"/></linearGradient>
+        <linearGradient id="gbear" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.red} stopOpacity="0.1"/><stop offset="100%" stopColor={C.red} stopOpacity="0.01"/></linearGradient>
+      </defs>
+      {yTicks.map((v,i)=>(
+        <g key={i}>
+          <line x1={PL} y1={yOf(v)} x2={W-PR} y2={yOf(v)} stroke={C.border} strokeWidth="0.5" strokeDasharray={v===target?"4 3":"none"}/>
+          <text x={PL-6} y={yOf(v)+4} textAnchor="end" fill={v===target?C.gold:C.muted} fontSize="7" fontFamily="'JetBrains Mono',monospace">{v>=1000000?`${v/1000000}M`:`${v/1000}k`}</text>
+          {v===target&&<text x={W-PR+3} y={yOf(v)+4} fill={C.gold} fontSize="7" fontFamily="'JetBrains Mono',monospace">1M</text>}
+        </g>
+      ))}
+      <path d={area("bull")} fill="url(#gbull)"/>
+      <path d={area("base")} fill="url(#gbase)"/>
+      <path d={area("bear")} fill="url(#gbear)"/>
+      <path d={line("bull")} fill="none" stroke={C.green} strokeWidth="1.5" strokeDasharray="4 2"/>
+      <path d={line("base")} fill="none" stroke={C.gold} strokeWidth="2"/>
+      <path d={line("bear")} fill="none" stroke={C.red} strokeWidth="1.5" strokeDasharray="4 2"/>
+      {labeled.map((d,i)=>{const xi=data.indexOf(d);return(<text key={i} x={xOf(xi)} y={H-PB+12} textAnchor="middle" fill={C.muted} fontSize="8" fontFamily="'JetBrains Mono',monospace">{d.label}</text>);})}
+    </svg>
+  );
+}
+
+// ── TRADINGVIEW WIDGET ────────────────────────────────────────────────────────
+function TVWidget({symbol,label,color}){
+  const src=`https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(symbol)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&theme=dark&style=1&timezone=Etc%2FUTC&withdateranges=1&hideideas=1&hide_side_toolbar=1&allow_symbol_change=0&locale=en`;
+  return(
+    <div className="card" style={{padding:0,overflow:"hidden"}}>
+      <div style={{padding:"9px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8}}>
+        <div style={{width:2,height:12,background:color,borderRadius:1,flexShrink:0}}/>
+        <span className="lbl" style={{marginBottom:0}}>{label}</span>
+      </div>
+      <iframe src={src} style={{width:"100%",height:220,border:"none",display:"block"}}
+        allow="clipboard-write" sandbox="allow-scripts allow-same-origin allow-popups allow-forms" title={label}/>
+    </div>
+  );
+}
+
+// ── SALARY HISTORY ───────────────────────────────────────────────────────────
+function SalaryHistory({salaryHistory,setSalaryHistory}){
+  const[adding,setAdding]=useState(false);
+  const[ne,setNe]=useState({month:0,netSalary:30000,fixedCosts:8000,label:""});
+  const addEntry=()=>{
+    const id=Date.now();setSalaryHistory(p=>[...p,{...ne,id}]);setAdding(false);
+  };
+  const removeEntry=id=>setSalaryHistory(p=>p.filter(e=>e.id!==id));
+  return(
+    <div className="card card-green">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <Lbl style={{marginBottom:0}}>Salary History</Lbl>
+        <button className="btn" onClick={()=>setAdding(!adding)} style={{border:`1px solid ${C.green}`,color:adding?C.bg:C.green,background:adding?C.green:"transparent"}}>{adding?"Cancel":"+ Add Entry"}</button>
+      </div>
+      {adding&&(
+        <div style={{background:C.bg,border:`1px solid ${C.green}30`,borderRadius:8,padding:14,marginBottom:14}}>
+          <p className="lbl" style={{marginBottom:12,color:C.green}}>New Salary Entry</p>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:10}}>
+            <NInput label="Month offset (0=Jan2026)" value={ne.month} onChange={v=>setNe(p=>({...p,month:v}))} color={C.green}/>
+            <NInput label="Net salary/mo" value={ne.netSalary} onChange={v=>setNe(p=>({...p,netSalary:v}))} color={C.green}/>
+            <NInput label="Fixed costs/mo" value={ne.fixedCosts} onChange={v=>setNe(p=>({...p,fixedCosts:v}))} color={C.red}/>
+            <div><span className="lbl" style={{display:"block",marginBottom:3}}>Label</span><input value={ne.label} onChange={e=>setNe(p=>({...p,label:e.target.value}))} placeholder="5% raise, new role…" style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:5,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:10,padding:"4px 7px",outline:"none",width:"100%"}}/></div>
+          </div>
+          <button className="btn" onClick={addEntry} style={{border:`1px solid ${C.green}`,color:C.bg,background:C.green,width:"100%",padding:"7px",fontSize:10}}>Add Entry</button>
+        </div>
+      )}
+      {salaryHistory.map((e,i)=>(
+        <div key={e.id} className="row-hover" style={{display:"grid",gridTemplateColumns:"80px 1fr 1fr 1fr 28px",alignItems:"center",gap:10,padding:"8px 5px",borderBottom:i<salaryHistory.length-1?`1px solid ${C.border}`:"none"}}>
+          <span style={{color:C.muted,fontSize:10}}>Month +{e.month}</span>
+          <div><span style={{color:C.green,fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(e.netSalary)} DKK</span>{e.label&&<p style={{color:C.dim,fontSize:9,marginTop:1}}>{e.label}</p>}</div>
+          <span style={{color:C.red,fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>−{fmt(e.fixedCosts)} DKK</span>
+          <span style={{color:C.gold,fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(e.netSalary-e.fixedCosts)} DKK investable</span>
+          <button onClick={()=>removeEntry(e.id)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,borderRadius:4,width:22,height:22,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── FREELANCE HISTORY ────────────────────────────────────────────────────────
+function FreelanceHistory({freelanceHistory,setFreelanceHistory}){
+  const[adding,setAdding]=useState(false);
+  const[ne,setNe]=useState({year:2026,amount:50000,label:""});
+  const YEARS=[2024,2025,2026,2027,2028,2029,2030];
+  const addEntry=()=>{const id=Date.now();setFreelanceHistory(p=>[...p,{...ne,id}]);setAdding(false);};
+  const removeEntry=id=>setFreelanceHistory(p=>p.filter(e=>e.id!==id));
+  const total=freelanceHistory.reduce((s,e)=>s+e.amount,0);
+  return(
+    <div className="card card-violet">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+        <Lbl style={{marginBottom:0}}>Freelance / Enkeltmandsvirksomhed Income</Lbl>
+        <button className="btn" onClick={()=>setAdding(!adding)} style={{border:`1px solid ${C.violet}`,color:adding?C.bg:C.violet,background:adding?C.violet:"transparent"}}>{adding?"Cancel":"+ Log Year"}</button>
+      </div>
+      <div style={{background:C.bg,borderRadius:7,padding:"8px 12px",marginBottom:12,borderLeft:`2px solid ${C.violet}`}}>
+        <p style={{color:C.muted,fontSize:9,lineHeight:1.7}}>Treated as <span style={{color:C.violet}}>100% bonus capital</span>. Deployed each June — ASK first (to total limit), then BTC DCA. Enters rubrik 111 on årsopgørelse.</p>
+      </div>
+      {adding&&(
+        <div style={{background:C.bg,border:`1px solid ${C.violet}30`,borderRadius:8,padding:14,marginBottom:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
+            <div><span className="lbl" style={{display:"block",marginBottom:3}}>Year</span><select value={ne.year} onChange={e=>setNe(p=>({...p,year:Number(e.target.value)}))} className="sel-input">{YEARS.map(y=><option key={y} value={y}>{y}</option>)}</select></div>
+            <NInput label="Annual amount" value={ne.amount} onChange={v=>setNe(p=>({...p,amount:v}))} color={C.violet}/>
+            <div><span className="lbl" style={{display:"block",marginBottom:3}}>Label</span><input value={ne.label} onChange={e=>setNe(p=>({...p,label:e.target.value}))} placeholder="Platform, contract…" style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:5,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:10,padding:"4px 7px",outline:"none",width:"100%"}}/></div>
+          </div>
+          <button className="btn" onClick={addEntry} style={{border:`1px solid ${C.violet}`,color:C.bg,background:C.violet,width:"100%",padding:"7px",fontSize:10}}>Log Year</button>
+        </div>
+      )}
+      {freelanceHistory.map((e,i)=>{
+        const isCur=e.year===2026;const isPast=e.year<2026;
+        const sc=isPast?C.green:isCur?C.gold:C.muted;
+        const st=isPast?"ACTUAL":isCur?"ESTIMATE":"FORECAST";
+        return(
+          <div key={e.id} className="row-hover" style={{display:"grid",gridTemplateColumns:"60px 1fr 1fr 60px 28px",alignItems:"center",gap:10,padding:"8px 5px",borderBottom:i<freelanceHistory.length-1?`1px solid ${C.border}`:"none"}}>
+            <span style={{color:isCur?C.gold:C.text,fontSize:12,fontFamily:"'JetBrains Mono',monospace",fontWeight:isCur?600:400}}>{e.year}</span>
+            <div><span style={{color:C.violet,fontSize:13,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(e.amount)} DKK</span>{e.label&&<p style={{color:C.dim,fontSize:9,marginTop:1}}>{e.label}</p>}</div>
+            <span style={{color:C.ice,fontSize:9}}>ASK → BTC DCA</span>
+            <Pill label={st} color={sc}/>
+            <button onClick={()=>removeEntry(e.id)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,borderRadius:4,width:22,height:22,cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+          </div>
+        );
+      })}
+      <div style={{display:"flex",justifyContent:"space-between",padding:"10px 5px 0",marginTop:4}}>
+        <span style={{color:C.muted,fontSize:11}}>Total logged</span>
+        <span className="num" style={{color:C.violet,fontSize:18}}>{fmt(total)} DKK</span>
+      </div>
+    </div>
+  );
+}
+
+// ── REGIME ENGINE COMPONENT ──────────────────────────────────────────────────
+function RegimeEngine({signalOverrides,setSignalOverrides,manualFlags,setManualFlags}){
+  const[selected,setSelected]=useState(null);
+  const[lastUpdated]=useState(()=>load("cs_sig_updated","Never"));
+
+  const getVal=id=>{
+    const def=SIGNAL_DEFS.find(s=>s.id===id);
+    return signalOverrides[id]!==undefined?signalOverrides[id]:def.defaultVal;
+  };
+  const setVal=(id,v)=>setSignalOverrides(p=>({...p,[id]:v}));
+
+  const getColor=(sig,val)=>{
+    for(const t of sig.thresholds)if(val>=t.v)return t.c;
+    return "neutral";
+  };
+  const dotColor=c=>c==="green"?C.green:c==="amber"?C.amber:c==="red"?C.red:C.muted;
+
+  const regimeScore=Math.round(SIGNAL_DEFS.reduce((s,sig)=>{
+    const v=getVal(sig.id);return s+(sig.score(v)*sig.weight)/100;
+  },0));
+
+  const regime=REGIMES.find(r=>regimeScore>=r.min)||REGIMES[REGIMES.length-1];
+  const regimeColor=regime.cls==="green"?C.green:regime.cls==="amber"?C.amber:C.red;
+
+  const acc=load("cs_alloc_acc","ask");
+  const adj=ACC_ADJ[acc]||ACC_ADJ.ask;
+  const raw={acwi:regime.acwi+adj.acwi,nasdaq:regime.nasdaq+adj.nasdaq,semi:Math.max(0,regime.semi+adj.semi)};
+  const tot=raw.acwi+raw.nasdaq+raw.semi;
+  const alloc={acwi:Math.round(raw.acwi/tot*100),nasdaq:Math.round(raw.nasdaq/tot*100),semi:100-Math.round(raw.acwi/tot*100)-Math.round(raw.nasdaq/tot*100)};
+
+  // Hormuz risk flag
+  const hormuzDays=manualFlags.hormuzDays||0;
+  const hormuzActive=manualFlags.hormuzActive||false;
+  const semiOverride=hormuzActive&&hormuzDays>=35;
+
+  // Flags
+  const flags=[];
+  const liqV=getVal("liq");const ismV=getVal("ism");const kV=getVal("korea");
+  const infV=getVal("inflation");const sofrV=getVal("sofr");const soxV=getVal("sox");
+  if(liqV<5.9)flags.push({t:"amber",msg:`Liquidity ${liqV.toFixed(2)}T below pain threshold. Watch TGA drawdown + eSLR reform for recovery (target: ~5.9T).`});
+  else flags.push({t:"green",msg:`Liquidity above threshold — risk asset tailwind intact.`});
+  if(sofrV>3)flags.push({t:"red",msg:`SOFR-EFFR spread elevated (+${sofrV}bps) — hedge fund de-grossing, leverage-sensitive assets (BTC/MSTR) vulnerable.`});
+  else if(sofrV<=0)flags.push({t:"green",msg:`SOFR-EFFR back below 0 — leverage conditions normalised. Re-grossing window open when Hormuz resolves.`});
+  if(kV<0)flags.push({t:"amber",msg:`Korea exports negative (${kV.toFixed(1)}% YoY) — ISM may soften in 4–8 weeks. Do not expand SEMI ahead of confirmation.`});
+  else flags.push({t:"green",msg:`Korea exports positive — SEMI cycle lead signal intact.`});
+  if(ismV>=52)flags.push({t:"green",msg:`ISM in expansion (${ismV.toFixed(1)}) — SEMI capex cycle confirmed.`});
+  else if(ismV>=48)flags.push({t:"amber",msg:`ISM neutral zone (${ismV.toFixed(1)}) — hold SEMI, await expansion confirmation.`});
+  else flags.push({t:"red",msg:`ISM contraction (${ismV.toFixed(1)}) — reduce SEMI to defensive floor.`});
+  if(infV<=-0.05)flags.push({t:"green",msg:`CPI/PCE spread declining — inflation falling. Ideal backdrop for NASDAQ-100 and SEMI multiples.`});
+  else if(infV>0.05)flags.push({t:"red",msg:`Inflation re-accelerating. Distinguish supply-shock (Hormuz) vs demand-pull. Apply higher penalty if commodity-driven.`});
+  if(soxV>=1.0)flags.push({t:"green",msg:`SOX outperforming SPX — semiconductor momentum confirmed by price action.`});
+  else flags.push({t:"amber",msg:`SOX underperforming SPX — SEMI expansion not yet confirmed. Wait for price momentum before adding.`});
+  if(semiOverride)flags.push({t:"red",msg:`⚠ HORMUZ OVERRIDE: Day ${hormuzDays}/45 — helium vulnerability active. SEMI hard-capped at defensive floor regardless of signal score.`});
+
+  const selDef=selected?SIGNAL_DEFS.find(s=>s.id===selected):null;
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+
+      {/* Liquidity Flag Banner */}
+      <div className={`card ${liqV>=5.9?"card-green":"card-red"}`} style={{padding:"12px 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <Dot color={liqV>=5.9?C.green:liqV>=5.7?C.amber:C.red} size={10} pulse={liqV<5.9}/>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:2}}>
+              <span style={{color:C.text,fontSize:11,fontFamily:"'JetBrains Mono',monospace",fontWeight:600}}>STENO LIQUIDITY FLAG</span>
+              <Pill label={liqV>=5.9?"ABOVE THRESHOLD":liqV>=5.7?"APPROACHING":"BELOW PAIN"} color={liqV>=5.9?C.green:liqV>=5.7?C.amber:C.red}/>
+              {hormuzActive&&<Pill label={`HORMUZ DAY ${hormuzDays}`} color={C.red}/>}
+            </div>
+            <p style={{color:C.muted,fontSize:9,lineHeight:1.6}}>
+              {liqV>=5.9
+                ?"Reserves above threshold. SOFR-EFFR normalised. eSLR reform lowers effective pain level post-Apr 2026. Risk asset tailwind intact — leverage re-entry window open."
+                :liqV>=5.7
+                ?"Reserves approaching threshold. TGA drawdown + ~$40bn/mo reserve management purchases = recovery path. Seasonal tailwind Apr. Monitor weekly."
+                :"Reserves below pain level. Funding stress risk. Wait for TGA drawdown + eSLR to lift reserves before expanding high-beta positions."}
+              {hormuzActive&&` Hormuz crisis (Day ${hormuzDays}): supply-shock inflation, external USD tightening. Domestic US liquidity improving but global dollar funding weakening.`}
+            </p>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div className="num" style={{color:liqV>=5.9?C.green:C.amber,fontSize:28}}>{liqV.toFixed(2)}</div>
+            <div className="lbl" style={{marginBottom:0}}>T USD reserves</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Signal Stack */}
+      <div className="card">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <Lbl style={{marginBottom:0}}>Signal Stack — 8 Signals · Steno-Aligned</Lbl>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{color:C.muted,fontSize:9}}>Click signal to edit value</span>
+            <button className="btn" onClick={()=>{store("cs_sig_updated",new Date().toLocaleDateString("da-DK"));}} style={{border:`1px solid ${C.ice}40`,color:C.ice}}>Mark Updated</button>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
+          {SIGNAL_DEFS.map(sig=>{
+            const v=getVal(sig.id);
+            const c=getColor(sig,v);
+            const dc=dotColor(c);
+            const disp=Math.abs(v)<10&&!Number.isInteger(v)?v.toFixed(2):v.toFixed(1);
+            return(
+              <div key={sig.id} className={`sig-card ${selected===sig.id?"sel":""}`} onClick={()=>setSelected(selected===sig.id?null:sig.id)}>
+                <div className="lbl" style={{marginBottom:3}}>{sig.label}</div>
+                <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:3}}>
+                  <Dot color={dc} size={7}/>
+                  <span style={{color:C.text,fontSize:14,fontFamily:"'JetBrains Mono',monospace"}}>{disp}</span>
+                  <span style={{color:C.muted,fontSize:9}}>{sig.unit}</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span className="tag" style={{background:`${sig.pillarColor}18`,color:sig.pillarColor}}>{sig.pillar}</span>
+                  <span style={{color:C.muted,fontSize:9}}>{sig.weight}%</span>
+                </div>
+                <div style={{height:2,background:C.dim,borderRadius:1,marginTop:6}}>
+                  <div style={{height:"100%",width:`${sig.weight*4}%`,background:dc,borderRadius:1,transition:"width 0.3s"}}/>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Selected signal detail + edit */}
+        {selDef&&(
+          <div style={{background:C.bg,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.border}`,marginBottom:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:16}}>
+              <div style={{flex:1}}>
+                <p style={{color:C.text,fontSize:11,marginBottom:5}}>{selDef.label}</p>
+                <p style={{color:C.muted,fontSize:9,lineHeight:1.65}}>{selDef.description}</p>
+              </div>
+              <div style={{minWidth:160}}>
+                <span className="lbl" style={{display:"block",marginBottom:3}}>Override value</span>
+                <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                  <input type="number" step="0.01" value={getVal(selDef.id)} onChange={e=>setVal(selDef.id,parseFloat(e.target.value)||0)}
+                    style={{background:C.bg,border:`1px solid ${C.gold}50`,borderRadius:5,color:C.gold,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 7px",width:100,outline:"none",textAlign:"right"}}/>
+                  <span className="lbl" style={{marginBottom:0}}>{selDef.unit||""}</span>
+                </div>
+                <button className="btn" onClick={()=>{const d=SIGNAL_DEFS.find(s=>s.id===selDef.id);setVal(selDef.id,d.defaultVal);}} style={{border:`1px solid ${C.border}`,color:C.muted,marginTop:6,fontSize:8}}>Reset default</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Regime Score */}
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:10}}>
+          <div>
+            <div className="lbl" style={{marginBottom:3}}>Regime score</div>
+            <div className="num-bold" style={{color:regimeColor,fontSize:36,lineHeight:1}}>{regimeScore}</div>
+            <div className="lbl" style={{marginBottom:0}}>/100</div>
+          </div>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+              <span style={{display:"flex",alignItems:"center",gap:5}}>
+                <Dot color={regimeColor} size={8} pulse={regime.cls==="red"}/>
+                <span style={{color:regimeColor,fontSize:11,fontFamily:"'JetBrains Mono',monospace",fontWeight:600}}>{regime.label}</span>
+              </span>
+              <span className="lbl" style={{marginBottom:0}}>Stress ← → Risk-On</span>
+            </div>
+            <div className="regime-bar-track">
+              <div style={{width:`${regimeScore}%`,height:"100%",background:regimeColor,borderRadius:3,transition:"width 0.5s ease"}}/>
+            </div>
+            <p style={{color:C.muted,fontSize:9,marginTop:6,lineHeight:1.6}}>{regime.desc}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Allocation Output */}
+      <div className="card card-gold">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <Lbl style={{marginBottom:0}}>Recommended Allocation — ACWI IMI · NASDAQ-100 · SEMI ETF</Lbl>
+          <div style={{display:"flex",gap:6}}>
+            {["ask","pension","taxable"].map(a=>(
+              <button key={a} className="btn" onClick={()=>{store("cs_alloc_acc",a);window.location.reload?.();}} style={{border:`1px solid ${acc===a?C.gold:C.border}`,color:acc===a?C.gold:C.muted,background:acc===a?`${C.gold}15`:"transparent",fontSize:8,letterSpacing:"0.1em"}}>{a.toUpperCase()}</button>
+            ))}
+          </div>
+        </div>
+
+        {[
+          {label:"ACWI IMI",note:"Base — untouchable floor",pct:semiOverride?Math.min(alloc.acwi+5,90):alloc.acwi,color:C.teal,range:"40–85%"},
+          {label:"NASDAQ-100",note:"Growth overlay",pct:alloc.nasdaq,color:C.violet,range:"15–35%"},
+          {label:"SEMI ETF",note:semiOverride?"⚠ Hormuz override — floor":"Cycle satellite",pct:semiOverride?5:alloc.semi,color:C.gold,range:"0–25%"},
+        ].map((r,i)=>(
+          <div key={i} style={{marginBottom:i<2?10:0}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{color:C.text,fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>{r.label}</span>
+                <span style={{color:C.muted,fontSize:9}}>{r.note}</span>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{color:C.muted,fontSize:9}}>{r.range}</span>
+                <span style={{color:r.color,fontSize:18,fontFamily:"'Cormorant Garamond',serif",fontWeight:600,minWidth:40,textAlign:"right"}}>{r.pct}%</span>
+              </div>
+            </div>
+            <div className="alloc-bar-track">
+              <div style={{width:`${r.pct}%`,height:"100%",background:r.color,borderRadius:4,transition:"width 0.5s"}}/>
+            </div>
+          </div>
+        ))}
+        <p style={{color:C.muted,fontSize:9,marginTop:10,lineHeight:1.6}}>{ACC_NOTES[acc]||ACC_NOTES.ask}</p>
+      </div>
+
+      {/* Active Flags */}
+      <div className="card">
+        <Lbl>Active Signal Flags</Lbl>
+        {flags.map((f,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"baseline",gap:8,padding:"5px 0",borderBottom:i<flags.length-1?`1px solid ${C.border}`:"none"}}>
+            <span style={{color:f.t==="green"?C.green:f.t==="amber"?C.amber:C.red,fontSize:10,flexShrink:0}}>{f.t==="green"?"✓":f.t==="amber"?"△":"✕"}</span>
+            <span style={{color:C.muted,fontSize:9,lineHeight:1.6}}>{f.msg}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Hormuz Manual Override */}
+      <div className="card card-red">
+        <Lbl>Geopolitical Override — Hormuz / Tail Risk</Lbl>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:10}}>
+          <div>
+            <span className="lbl" style={{display:"block",marginBottom:3}}>Crisis Active?</span>
+            <div style={{display:"flex",gap:6}}>
+              {[true,false].map(v=>(
+                <button key={String(v)} className="btn" onClick={()=>setManualFlags(p=>({...p,hormuzActive:v}))}
+                  style={{border:`1px solid ${hormuzActive===v?C.red:C.border}`,color:hormuzActive===v?C.red:C.muted,background:hormuzActive===v?`${C.red}15`:"transparent",flex:1,fontSize:9}}>
+                  {v?"YES":"NO"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <NInput label={`Days since escalation (45d = helium risk)`} value={hormuzDays} onChange={v=>setManualFlags(p=>({...p,hormuzDays:v}))} color={C.red} suffix="days"/>
+          <div>
+            <span className="lbl" style={{display:"block",marginBottom:3}}>Supply chain inflation?</span>
+            <div style={{display:"flex",gap:6}}>
+              {[true,false].map(v=>(
+                <button key={String(v)} className="btn" onClick={()=>setManualFlags(p=>({...p,supplyShock:v}))}
+                  style={{border:`1px solid ${manualFlags.supplyShock===v?C.amber:C.border}`,color:manualFlags.supplyShock===v?C.amber:C.muted,flex:1,fontSize:9}}>
+                  {v?"YES":"NO"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        {hormuzActive&&(
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+              <span style={{color:C.red,fontSize:9}}>Day {hormuzDays} / 45 — helium vulnerability threshold</span>
+              <span style={{color:hormuzDays>=35?C.red:hormuzDays>=20?C.amber:C.muted,fontSize:9}}>{hormuzDays>=45?"SEMI SUPPLY AT RISK":hormuzDays>=35?"OVERRIDE ACTIVE":hormuzDays>=20?"MONITOR CLOSELY":"WATCHING"}</span>
+            </div>
+            <div className="hormuz-bar"><div style={{width:`${Math.min((hormuzDays/45)*100,100)}%`,height:"100%",background:hormuzDays>=35?C.red:C.amber,borderRadius:2,transition:"width 0.3s"}}/></div>
+            <p style={{color:C.muted,fontSize:9,marginTop:6,lineHeight:1.6}}>Key thresholds: Day 35 = EV battery/copper halt risk (sulfuric acid). Day 45 = helium wafer cooling risk — AI supply chain disruption. Day 90 = fertilizer production cliff. If unresolved, SEMI thesis has structural pause.</p>
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
+// ── BTC BETA COMPLEX ─────────────────────────────────────────────────────────
+function BTCBetaPanel(){
+  const ASSETS=[
+    {ticker:"BTC",bull:717,draw:-52,color:C.gold,note:"1.0× beta. Core DCA. Never fully sold. Hard cap 40% NW."},
+    {ticker:"MSTR",bull:2297,draw:-71,color:C.violet,note:"~3× BTC beta. ASK + Aldersopsparing. Entry via Atreidis only."},
+    {ticker:"COIN",bull:890,draw:-64,color:C.ice,note:"~1.2× BTC beta. Volume leverage via exchange revenues. Cycle-peak options play candidate."},
+    {ticker:"HOOD",bull:1679,draw:-53,color:C.teal,note:"BTC optionality. Retail brokerage leverage. Lower crypto concentration than COIN."},
+    {ticker:"ETH",bull:343,draw:-63,color:C.muted,note:"Sub-BTC return with full BTC drawdown. 1.0 correlation. No structural advantage. Avoid."},
+    {ticker:"SOL",bull:2075,draw:-72,color:C.amber,note:"2297%/2075% bull run but no place in Danish tax-efficient accounts. No structural reason vs BTC."},
+  ];
+  return(
+    <div className="card">
+      <Lbl>BTC Beta Complex — Nov 2022 → Oct 2025 Cycle</Lbl>
+      <p style={{color:C.muted,fontSize:9,marginBottom:12,lineHeight:1.6}}>All crypto-linked assets remain one core trade with different beta, convexity, and idiosyncratic risk. Start with BTC, not competing narratives. Watch BTC pairs — genuine outperformers beat BTC, not just rise with it.</p>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+        {ASSETS.map(a=>(
+          <div key={a.ticker} style={{background:C.bg,border:`1px solid ${a.color}25`,borderRadius:8,padding:"12px 14px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+              <span style={{color:a.color,fontSize:14,fontFamily:"'JetBrains Mono',monospace",fontWeight:600}}>{a.ticker}</span>
+              <Pill label={a.ticker==="ETH"||a.ticker==="SOL"?"AVOID":a.ticker==="MSTR"?"CORE":"WATCH"} color={a.ticker==="ETH"||a.ticker==="SOL"?C.muted:a.color}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+              <div style={{textAlign:"center",background:`${C.green}12`,borderRadius:5,padding:"5px 6px"}}>
+                <div className="lbl" style={{marginBottom:2}}>Bull run</div>
+                <div style={{color:C.green,fontSize:13,fontFamily:"'JetBrains Mono',monospace"}}>+{a.bull}%</div>
+              </div>
+              <div style={{textAlign:"center",background:`${C.red}12`,borderRadius:5,padding:"5px 6px"}}>
+                <div className="lbl" style={{marginBottom:2}}>Drawdown</div>
+                <div style={{color:C.red,fontSize:13,fontFamily:"'JetBrains Mono',monospace"}}>{a.draw}%</div>
+              </div>
+            </div>
+            <p style={{color:C.dim,fontSize:9,lineHeight:1.55}}>{a.note}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:10,background:C.bg,borderRadius:7,padding:"8px 12px",borderLeft:`2px solid ${C.gold}`}}>
+        <p style={{color:C.muted,fontSize:9,lineHeight:1.65}}>MSTR delivered 3.2× BTC's bull return but took 1.37× BTC's drawdown — the best asymmetric ratio in the complex. COIN is the only equity worth watching as a cycle-peak amplifier (options play). Zero altcoins, zero duplicate BTC beta without structural reason.</p>
+      </div>
+    </div>
+  );
+}
+
+// ── MAIN APP ─────────────────────────────────────────────────────────────────
+function App(){
+  const[tab,setTab]=useState("command");
+  const TABS=["command","regime","markets","portfolio","projections","income","strategy"];
+  const tabColors={command:C.gold,regime:C.ice,markets:C.violet,portfolio:C.gold,projections:C.ice,income:C.green,strategy:C.red};
+
+  // State
+  const[salaryHistory,setSH]=useState(()=>load("cs_sal",[{id:1,month:0,netSalary:30000,fixedCosts:8000,label:"Starting salary"}]));
+  const setSalaryHistory=u=>{setSH(p=>{const n=typeof u==="function"?u(p):u;store("cs_sal",n);return n;});};
+  const[freelanceHistory,setFH]=useState(()=>load("cs_fl",[{id:1,year:2026,amount:50000,label:"Platform + contracts"}]));
+  const setFreelanceHistory=u=>{setFH(p=>{const n=typeof u==="function"?u(p):u;store("cs_fl",n);return n;});};
+  const[accounts,setAcc]=useState(()=>load("cs_acc",{ask:30000,nordnetPension:5000,danicaPension:150000,aldersopsparing:5000,btc:45000,mstr:15000,taxable:25000,liquidSavings:200000}));
+  const setAccounts=u=>{setAcc(p=>{const n=typeof u==="function"?u(p):u;store("cs_acc",n);return n;});};
+  const[btcExit,setBtcExit]=useState(()=>load("cs_btcx",{bear:75000,base:150000,bull:200000}));
+  const setBE=v=>{setBtcExit(v);store("cs_btcx",v);};
+  const[mstrExit,setMstrExit]=useState(()=>load("cs_mstrx",{bear:90,base:400,bull:700}));
+  const setME=v=>{setMstrExit(v);store("cs_mstrx",v);};
+  const[a,setARaw]=useState(()=>load("cs_asmp",{monthlyInvestable:20000,pensionMonthly:2850,askMonthly:11150,apartmentMonthly:5000,employerPension:2400,askTotalLimit:174200,bearEquity:6,baseEquity:9,bullEquity:12,bearBTC:0.8,baseBTC:2.0,bullBTC:4.0,bearMSTR:0.5,baseMSTR:3.0,bullMSTR:6.0}));
+  const setA=u=>{setARaw(p=>{const n=typeof u==="function"?u(p):u;store("cs_asmp",n);return n;});};
+  const upA=(k,v)=>setA(p=>({...p,[k]:v}));
+  const upAcc=(k,v)=>setAccounts(p=>({...p,[k]:v}));
+  const[horizonMonths,setHM]=useState(48);
+  const[signalOverrides,setSOR]=useState(()=>load("cs_sigs",{}));
+  const setSignalOverrides=u=>{setSOR(p=>{const n=typeof u==="function"?u(p):u;store("cs_sigs",n);return n;});};
+  const[manualFlags,setMF]=useState(()=>load("cs_flags",{hormuzActive:true,hormuzDays:0,supplyShock:false}));
+  const setManualFlags=u=>{setMF(p=>{const n=typeof u==="function"?u(p):u;store("cs_flags",n);return n;});};
+
+  const curSal=salaryHistory[salaryHistory.length-1];
+  const investable=Math.max(0,curSal.netSalary-curSal.fixedCosts);
+  const curFL=(freelanceHistory.find(e=>e.year===2026)||{}).amount||0;
+  const annSal=curSal.netSalary*12;
+  const totalInc=annSal+curFL;
+  const annInv=investable*12+curFL;
+  const savRate=pct(investable,curSal.netSalary);
+  const effRate=pct(annInv,totalInc);
+  const totalNW=Object.values(accounts).reduce((s,v)=>s+v,0);
+  const nwEx=totalNW-accounts.liquidSavings;
+  const target=1000000;
+
+  const projData=runProjection(accounts,a,horizonMonths,salaryHistory,freelanceHistory);
+  const merged=getMerged(projData);
+  const finalFor=s=>{const arr=projData.filter(d=>d.scenario===s);return arr.length?arr[arr.length-1].total:0;};
+  const[fBear,fBase,fBull]=["bear","base","bull"].map(finalFor);
+  const endYear=2026+Math.floor(horizonMonths/12);
+
+  // Regime score for command tab
+  const regScore=Math.round(SIGNAL_DEFS.reduce((s,sig)=>{
+    const v=signalOverrides[sig.id]!==undefined?signalOverrides[sig.id]:sig.defaultVal;
+    return s+(sig.score(v)*sig.weight)/100;
+  },0));
+  const regDef=REGIMES.find(r=>regScore>=r.min)||REGIMES[REGIMES.length-1];
+  const regCol=regDef.cls==="green"?C.green:regDef.cls==="amber"?C.amber:C.red;
+
+  const ASK_ALLOC=[{label:"ACWI IMI",value:50,color:C.teal},{label:"SEMI ETF",value:30,color:C.gold},{label:"NASDAQ-100",value:15,color:C.violet},{label:"MSTR (cycle)",value:5,color:C.violet}];
+  const PEN_ALLOC=[{label:"SEMI ETF",value:70,color:C.gold},{label:"Amundi World",value:30,color:C.ice}];
+
+  return(
+    <div style={{minHeight:"100vh",color:C.text}}>
+
+      {/* ── HEADER ── */}
+      <div style={{background:"rgba(10,13,23,0.96)",borderBottom:`1px solid ${C.border}`,backdropFilter:"blur(10px)",position:"sticky",top:0,zIndex:100}}>
+        <div style={{padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{display:"flex",alignItems:"baseline",gap:12}}>
+              <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontWeight:300,fontSize:24,color:C.text,letterSpacing:"0.02em",fontStyle:"italic"}}>Capital Protocol</h1>
+              <span style={{color:C.gold,fontFamily:"'JetBrains Mono',monospace",fontSize:10}}>2026–{endYear}</span>
+              <span className="badge" style={{background:`${C.green}18`,color:C.green,border:`1px solid ${C.green}30`}}>● LIVE</span>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
+              <span className="lbl" style={{marginBottom:0}}>Emil Skriver · Copenhagen · Danish tax-optimised</span>
+              <div style={{display:"flex",gap:5,marginLeft:8}}>
+                <button className="btn" onClick={()=>exportData({salaryHistory,freelanceHistory,accounts,btcExit,mstrExit,assumptions:a,signalOverrides,manualFlags})} style={{border:`1px solid ${C.ice}40`,color:C.ice}}>↓ Export</button>
+                <label className="btn" style={{border:`1px solid ${C.gold}40`,color:C.gold,cursor:"pointer"}}>↑ Import<input type="file" accept=".json" style={{display:"none"}} onChange={e=>importData(e,{setSalaryHistory,setFreelanceHistory,setAccounts,setBtcExit:setBE,setMstrExit:setME,setA,setSignalOverrides:setSOR,setManualFlags:setMF})}/></label>
+                <button className="btn" onClick={()=>{if(window.confirm("Reset all?")){{localStorage.clear();window.location.reload();}}}} style={{border:`1px solid ${C.dim}`,color:C.muted}}>Reset</button>
+              </div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:0,alignItems:"stretch"}}>
+            {[
+              {l:"Net Worth",v:fmt(totalNW)+" DKK",c:C.gold,large:true},
+              {l:"Regime Score",v:String(regScore)+"/100",c:regCol},
+              {l:"Investable/mo",v:fmt(investable)+" DKK",c:C.green},
+              {l:"Eff. Savings",v:effRate+"%",c:C.ice},
+            ].map((m,i)=>(
+              <div key={i} style={{paddingLeft:18,paddingRight:i===3?0:18,borderLeft:`1px solid ${C.border}`,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+                <span className="lbl" style={{marginBottom:2}}>{m.l}</span>
+                <span className="num" style={{color:m.c,fontSize:m.large?26:18,lineHeight:1}}>{m.v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{padding:"0 24px 10px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+            <span className="lbl" style={{marginBottom:0}}>Progress → 1,000,000 DKK</span>
+            <div style={{display:"flex",gap:16}}>
+              <span style={{color:C.violet,fontSize:9,fontFamily:"'JetBrains Mono',monospace"}}>excl. reserve: {fmt(nwEx)} ({pct(nwEx,target)}%)</span>
+              <span style={{color:C.gold,fontSize:9,fontFamily:"'JetBrains Mono',monospace"}}>total: {fmt(totalNW)} ({pct(totalNW,target)}%)</span>
+            </div>
+          </div>
+          <div style={{height:3,background:C.dim,borderRadius:2,position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:0,height:"100%",width:`${Math.min(pct(totalNW,target),100)}%`,background:`linear-gradient(90deg,${C.goldDim},${C.gold})`,borderRadius:2,transition:"width 0.5s"}}/>
+            <div style={{position:"absolute",top:0,left:0,height:"100%",width:`${Math.min(pct(nwEx,target),100)}%`,background:C.violet,borderRadius:2,opacity:0.7,transition:"width 0.5s"}}/>
+          </div>
+          <p className="lbl" style={{marginBottom:0,marginTop:3,textAlign:"right"}}>{fmt(target-totalNW)} DKK remaining · 2027 apartment reserve ({fmt(accounts.liquidSavings)} DKK) earmarked</p>
+        </div>
+        <div style={{display:"flex",borderTop:`1px solid ${C.border}`,paddingLeft:12}}>
+          {TABS.map(t=>(
+            <button key={t} className={`tab-btn ${tab===t?"active":""}`} onClick={()=>setTab(t)}
+              style={{color:tab===t?tabColors[t]:C.muted}}>
+              {t}
+              {tab===t&&<span style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:tabColors[t],borderRadius:2}}/>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── CONTENT ── */}
+      <div style={{padding:"20px 24px",maxWidth:1380,margin:"0 auto"}}>
+
+        {/* ══ COMMAND ══ */}
+        {tab==="command"&&(
+          <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:16}}>
+
+            {/* Current regime summary */}
+            <div className="card card-gold">
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+                <div>
+                  <Lbl style={{marginBottom:4}}>Current Macro Regime</Lbl>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <Dot color={regCol} size={10} pulse={regDef.cls!=="green"}/>
+                    <span style={{color:regCol,fontFamily:"'JetBrains Mono',monospace",fontSize:16,fontWeight:600}}>{regDef.label}</span>
+                    <span style={{color:C.muted,fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>{regScore}/100</span>
+                  </div>
+                </div>
+                <button className="btn" onClick={()=>setTab("regime")} style={{border:`1px solid ${C.gold}40`,color:C.gold}}>Full Regime Engine →</button>
+              </div>
+              <p style={{color:C.muted,fontSize:10,lineHeight:1.7,marginBottom:14}}>{regDef.desc}</p>
+
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:14}}>
+                {SIGNAL_DEFS.slice(0,4).map(sig=>{
+                  const v=signalOverrides[sig.id]!==undefined?signalOverrides[sig.id]:sig.defaultVal;
+                  const c=sig.thresholds.find(t=>v>=t.v)?.c||"neutral";
+                  const dc=c==="green"?C.green:c==="amber"?C.amber:c==="red"?C.red:C.muted;
+                  return(
+                    <div key={sig.id} style={{background:C.bg,borderRadius:7,padding:"10px 12px",border:`1px solid ${C.border}`}}>
+                      <div className="lbl" style={{marginBottom:3}}>{sig.label}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:5}}>
+                        <Dot color={dc} size={6}/>
+                        <span style={{color:dc,fontSize:14,fontFamily:"'JetBrains Mono',monospace"}}>{Math.abs(v)<10&&!Number.isInteger(v)?v.toFixed(2):v.toFixed(1)}</span>
+                        <span style={{color:C.muted,fontSize:9}}>{sig.unit}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Go-to allocation */}
+              <div style={{background:C.bg,borderRadius:8,padding:"12px 14px",border:`1px solid ${C.border}`}}>
+                <div className="lbl" style={{marginBottom:8}}>Go-To Allocation — ASK Baseline</div>
+                {(()=>{
+                  const adj=ACC_ADJ.ask;
+                  const raw={acwi:regDef.acwi+adj.acwi,nasdaq:regDef.nasdaq+adj.nasdaq,semi:Math.max(0,regDef.semi+adj.semi)};
+                  const tot=raw.acwi+raw.nasdaq+raw.semi;
+                  const alloc={acwi:Math.round(raw.acwi/tot*100),nasdaq:Math.round(raw.nasdaq/tot*100),semi:100-Math.round(raw.acwi/tot*100)-Math.round(raw.nasdaq/tot*100)};
+                  return(
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                      {[{l:"ACWI IMI",v:alloc.acwi,c:C.teal},{l:"NASDAQ-100",v:alloc.nasdaq,c:C.violet},{l:"SEMI ETF",v:alloc.semi,c:C.gold}].map((r,i)=>(
+                        <div key={i} style={{textAlign:"center",background:`${r.c}12`,borderRadius:7,padding:"10px"}}>
+                          <div className="lbl" style={{marginBottom:3}}>{r.l}</div>
+                          <div className="num-bold" style={{color:r.c,fontSize:28}}>{r.v}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* KPI Row */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12}}>
+              {[
+                {l:"Net Worth",v:fmt(totalNW)+" DKK",c:C.gold,sub:`${pct(totalNW,target)}% of target`},
+                {l:`Base ${endYear}`,v:fmtK(fBase)+" DKK",c:C.ice,sub:`${Math.round((fBase/target)*100)}% of target`},
+                {l:"Monthly Investable",v:fmt(investable)+" DKK",c:C.green,sub:"after fixed costs"},
+                {l:"Eff. Savings Rate",v:effRate+"%",c:C.teal,sub:"incl. freelance"},
+                {l:"ASK Remaining",v:fmt(Math.max(0,a.askTotalLimit-accounts.ask))+" DKK",c:C.violet,sub:"lifetime capacity"},
+              ].map((m,i)=>(
+                <div key={i} className="card metric-card" style={{position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:`linear-gradient(90deg,${m.c}60,transparent)`}}/>
+                  <Lbl style={{marginBottom:8}}>{m.l}</Lbl>
+                  <p className="num-bold" style={{color:m.c,fontSize:26,lineHeight:1}}>{m.v}</p>
+                  <p className="lbl" style={{marginTop:5,marginBottom:0}}>{m.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Accounts + tactical plan */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+              <div className="card card-gold">
+                <Lbl>Account Balances</Lbl>
+                {[
+                  {k:"ask",l:"ASK (Saxo)",c:C.gold},{k:"nordnetPension",l:"Nordnet Ratepension",c:C.ice},
+                  {k:"danicaPension",l:"Danica Ratepension",c:C.ice},{k:"aldersopsparing",l:"Aldersopsparing",c:C.green},
+                  {k:"btc",l:"Bitcoin (Ledger)",c:C.gold},{k:"mstr",l:"MSTR",c:C.violet},
+                  {k:"taxable",l:"Taxable (NVDA/TSMC)",c:C.muted},{k:"liquidSavings",l:"Liquid (Apartment)",c:C.violet},
+                ].map(acc=>(
+                  <div key={acc.k} className="row-hover" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 4px",borderBottom:`1px solid ${C.border}`,borderRadius:4}}>
+                    <span style={{color:C.muted,fontSize:11}}>{acc.l}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:5}}>
+                      <input type="number" value={accounts[acc.k]} onChange={e=>upAcc(acc.k,Number(e.target.value))}
+                        style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:4,color:acc.c,fontSize:11,fontFamily:"'JetBrains Mono',monospace",padding:"2px 6px",width:86,textAlign:"right",outline:"none"}}
+                        onFocus={e=>e.target.style.borderColor=C.gold+"60"} onBlur={e=>e.target.style.borderColor=C.border}/>
+                      <span className="lbl" style={{marginBottom:0}}>DKK</span>
+                    </div>
+                  </div>
+                ))}
+                <div style={{display:"flex",justifyContent:"space-between",padding:"10px 4px 0"}}>
+                  <span style={{color:C.muted,fontSize:11}}>Total</span>
+                  <span className="num-bold" style={{color:C.gold,fontSize:22}}>{fmt(totalNW)} DKK</span>
+                </div>
+              </div>
+
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <div className="card">
+                  <Lbl>Monthly Flow</Lbl>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                    {[
+                      {l:"ASK",v:fmt(a.askMonthly),c:C.gold},{l:"Nordnet Pension",v:fmt(a.pensionMonthly),c:C.ice},
+                      {l:"Apartment Save",v:fmt(a.apartmentMonthly),c:C.violet},{l:"BTC DCA",v:"Post-ASK limit",c:C.gold},
+                    ].map((r,i)=>(
+                      <div key={i} style={{background:C.bg,borderRadius:6,padding:"8px 10px",border:`1px solid ${C.border}`}}>
+                        <div className="lbl" style={{marginBottom:2}}>{r.l}</div>
+                        <div style={{color:r.c,fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>{r.v} DKK</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="card card-violet" style={{flex:1}}>
+                  <Lbl>Atreidis Status</Lbl>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                    <Dot color={C.amber} size={10} pulse={true}/>
+                    <span style={{color:C.amber,fontSize:12,fontFamily:"'JetBrains Mono',monospace",fontWeight:600}}>YELLOW — CAUTION</span>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                    {[{n:"3-Day OBV",s:"WATCHING"},{n:"Norm. MACD",s:"WATCHING"},{n:"120-Day SMA",s:"BELOW"},{n:"BTC Core Risk",s:"MONITOR"}].map((f,i)=>(
+                      <div key={i} style={{background:C.bg,borderRadius:6,padding:"7px 9px",border:`1px solid ${C.border}`}}>
+                        <div className="lbl" style={{marginBottom:1,fontSize:7}}>{f.n}</div>
+                        <Pill label={f.s} color={C.muted}/>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{color:C.dim,fontSize:9,marginTop:8,lineHeight:1.6}}>Plan: MSTR in Aldersopsparing + ASK cycle positions on confirmed green. Dual-key: Atreidis green + liquidity above threshold + Korea exports positive.</p>
+                </div>
+
+                <div className="card" style={{background:`${C.red}08`,border:`1px solid ${C.red}20`}}>
+                  <Lbl>2027 Apartment Milestone</Lbl>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <span style={{color:C.muted,fontSize:11}}>Target: ~5,000,000 DKK</span>
+                    <span style={{color:C.violet,fontSize:12,fontFamily:"'JetBrains Mono',monospace"}}>{fmt(accounts.liquidSavings)} DKK</span>
+                  </div>
+                  <div style={{height:3,background:C.dim,borderRadius:2,overflow:"hidden",marginBottom:6}}>
+                    <div style={{width:`${Math.min((accounts.liquidSavings/800000)*100,100)}%`,height:"100%",background:C.violet,borderRadius:2}}/>
+                  </div>
+                  <p style={{color:C.dim,fontSize:9,lineHeight:1.5}}>~800k DKK combined savings goal with partner. Post-purchase: housing cost +5,500–6,500 DKK/mo. Strategic inflection for cycle exit timing — Atreidis red must be respected in Oct–Dec 2026.</p>
+                </div>
+              </div>
+            </div>
+
+            <BTCBetaPanel/>
+          </div>
+        )}
+
+        {/* ══ REGIME ══ */}
+        {tab==="regime"&&(
+          <div className="fade-in">
+            <RegimeEngine signalOverrides={signalOverrides} setSignalOverrides={setSignalOverrides} manualFlags={manualFlags} setManualFlags={setManualFlags}/>
+          </div>
+        )}
+
+        {/* ══ MARKETS ══ */}
+        {tab==="markets"&&(
+          <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+              <TVWidget symbol="BITSTAMP:BTCUSD" label="Bitcoin / USD — Self-custody DCA · Hard cap 40% NW" color={C.gold}/>
+              <TVWidget symbol="NASDAQ:MSTR" label="MicroStrategy — ASK + Aldersopsparing · Atreidis gate" color={C.violet}/>
+              <TVWidget symbol="NASDAQ:NVDA" label="NVIDIA — Taxable · Realisationsprincip" color={C.green}/>
+              <TVWidget symbol="XETR:SMH" label="VanEck SEMI (SMH) — ASK + Nordnet Pension" color={C.gold}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+              <TVWidget symbol="NASDAQ:QQQ" label="NASDAQ-100 (QQQ) — ASK overlay · regime-gated" color={C.violet}/>
+              <TVWidget symbol="NASDAQ:COIN" label="Coinbase — BTC beta complex watchlist · Cycle-peak candidate" color={C.ice}/>
+            </div>
+          </div>
+        )}
+
+        {/* ══ PORTFOLIO ══ */}
+        {tab==="portfolio"&&(
+          <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+              <div className="card card-gold">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <Lbl style={{marginBottom:0}}>ASK — Aktiesparekonto (Saxo)</Lbl>
+                  <Pill label="17% LAGER" color={C.gold}/>
+                </div>
+                <Pie2 data={ASK_ALLOC}/>
+                <div style={{marginTop:12,background:C.bg,borderRadius:7,padding:"9px 12px",border:`1px solid ${C.border}`}}>
+                  <p style={{color:C.muted,fontSize:9,lineHeight:1.7}}>Lifetime deposit limit 174,200 DKK · Front-load Jan–Aug · Internal reallocation unlimited — ACWI→MSTR rotation on Atreidis green never counts as new deposit · New monthly contributions → NASDAQ-100 (EQQQ) to manage SEMI concentration</p>
+                </div>
+                <div style={{marginTop:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+                  {[
+                    {l:"ACWI IMI",d:"Core anchor · True diversifier · Floor position"},
+                    {l:"SEMI ETF",d:"Cycle satellite · Regime-gated · Existing held"},
+                    {l:"NASDAQ-100 (EQQQ)",d:"New monthly contributions · Growth overlay"},
+                    {l:"MSTR (satellite)",d:"Levered BTC · Entry via Atreidis green only"},
+                  ].map((it,i)=>(
+                    <div key={i} style={{padding:"8px 10px",background:C.bg,borderRadius:7,border:`1px solid ${C.border}`}}>
+                      <p style={{color:C.gold,fontSize:10,marginBottom:2}}>{it.l}</p>
+                      <p style={{color:C.dim,fontSize:9,lineHeight:1.5}}>{it.d}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="card card-ice">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <Lbl style={{marginBottom:0}}>Nordnet Ratepension</Lbl>
+                  <Pill label="15.3% PAL" color={C.ice}/>
+                </div>
+                <Pie2 data={PEN_ALLOC}/>
+                <div style={{marginTop:12,background:C.bg,borderRadius:7,padding:"9px 12px",border:`1px solid ${C.border}`}}>
+                  <p style={{color:C.muted,fontSize:9,lineHeight:1.7}}>2,850 DKK/mo own · Annual cap ~63,100 DKK net of Danica · 70% SEMI / 30% Amundi MSCI World · Pension gets +15% SEMI vs ASK baseline (long horizon, lower tax drag)</p>
+                </div>
+                <div className="card" style={{marginTop:10,padding:"10px 13px"}}>
+                  <p style={{color:C.gold,fontSize:10,fontWeight:600,marginBottom:3}}>Danica Ratepension</p>
+                  <p style={{color:C.muted,fontSize:9,marginBottom:5}}>~150,000 DKK · Employer 6% gross · Global Equity Fund</p>
+                  <p style={{color:C.dim,fontSize:9}}>Broad anchor. Complements Nordnet SEMI tilt. Limited fund selection — accept global equity default.</p>
+                </div>
+                <div className="card" style={{marginTop:8,border:`1px solid ${C.gold}40`,padding:"10px 13px"}}>
+                  <Lbl style={{marginBottom:6}}>Aldersopsparing — Tactical Rotation</Lbl>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:0}}>
+                    {[
+                      {phase:"NOW",pos:"SEMI ETF",c:C.gold,note:"Interim — awaiting signal"},
+                      {phase:"ATREIDIS ↑",pos:"→ MSTR",c:C.violet,note:"On confirmed green"},
+                      {phase:"POST-CYCLE",pos:"→ SEMI/World",c:C.teal,note:"After harvest"},
+                    ].map((p,i,arr)=>(
+                      <div key={i} style={{padding:"10px 12px",borderRight:i<arr.length-1?`1px solid ${C.border}`:"none",position:"relative"}}>
+                        <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:p.c,borderRadius:2}}/>
+                        <p className="lbl" style={{marginBottom:3}}>{p.phase}</p>
+                        <p style={{color:p.c,fontSize:11,fontFamily:"'JetBrains Mono',monospace",marginBottom:2}}>{p.pos}</p>
+                        <p style={{color:C.dim,fontSize:9}}>{p.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+              <div className="card">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <Lbl style={{marginBottom:0}}>Bitcoin — Self Custody (Ledger)</Lbl>
+                  <Pill label="40% HARD CAP" color={C.gold}/>
+                </div>
+                <p style={{color:C.muted,fontSize:9,marginBottom:10}}>Long-term DCA. Never fully sold. BTC DCA activates after ASK total limit is hit. SOFR normalisation = re-grossing window open when Hormuz resolves.</p>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:7,marginBottom:10}}>
+                  {[["Bear",btcExit.bear,C.red],["Base",btcExit.base,C.gold],["Bull",btcExit.bull,C.green]].map(([s,v,c])=>(
+                    <div key={s} style={{padding:"8px",background:C.bg,border:`1px solid ${c}25`,borderRadius:7,textAlign:"center"}}>
+                      <p className="lbl" style={{marginBottom:2}}>{s} exit</p>
+                      <p style={{color:c,fontSize:11,fontFamily:"'JetBrains Mono',monospace"}}>${fmtK(v)}</p>
+                    </div>
+                  ))}
+                </div>
+                <div style={{background:`${C.red}10`,border:`1px solid ${C.red}25`,borderRadius:7,padding:"8px 10px",marginBottom:8}}>
+                  <p style={{color:C.red,fontSize:8,fontFamily:"'JetBrains Mono',monospace"}}>⚠ Verify crypto lagerprincip 2026 status with skatterådgiver. Monitor Danish legislation changes.</p>
+                </div>
+                <div style={{background:C.bg,borderRadius:7,padding:"8px 10px",borderLeft:`2px solid ${C.gold}`}}>
+                  <p className="lbl" style={{marginBottom:3}}>Harvest Rule</p>
+                  <p style={{color:C.muted,fontSize:9,lineHeight:1.65}}>Staged exit 20–40% at base target. Never fully exit BTC. Rotate proceeds to ACWI IMI in ASK. Atreidis red in Oct–Dec 2026 = respect the signal — apartment purchase imminent.</p>
+                </div>
+              </div>
+
+              <div className="card">
+                <Lbl>Tax Efficiency Ladder</Lbl>
+                {[
+                  {l:"ASK",rate:"17%",pri:"1st",c:C.gold,d:"Lagerbeskatning · 174,200 DKK lifetime limit · Full internal reallocation freedom"},
+                  {l:"Ratepension",rate:"15.3%",pri:"2nd",c:C.ice,d:"PAL skat · Annual cap · Locked cash, free rotation · Long horizon = more SEMI"},
+                  {l:"Aldersopsparing",rate:"15.3%",pri:"2nd",c:C.green,d:"PAL skat · 8,900 DKK/yr · Tactical MSTR rotation vehicle"},
+                  {l:"Taxable Stocks",rate:"27/42%",pri:"3rd",c:C.muted,d:"Realisationsprincip · NVDA, TSMC only · No ETFs"},
+                  {l:"Taxable ETFs",rate:"~37%",pri:"Avoid",c:C.red,d:"Annual lagerbeskatning in taxable · Always use ASK or pension instead"},
+                ].map((it,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"9px 10px",background:C.bg,borderRadius:7,border:`1px solid ${C.border}`,marginBottom:6}}>
+                    <div style={{width:3,alignSelf:"stretch",background:it.c,borderRadius:2,opacity:it.pri==="Avoid"?0.3:0.8,flexShrink:0}}/>
+                    <div style={{width:36,flexShrink:0}}><Pill label={it.pri.toUpperCase()} color={it.c}/></div>
+                    <div style={{flex:1}}>
+                      <p style={{color:C.text,fontSize:11}}>{it.l} <span style={{color:it.c,fontFamily:"'JetBrains Mono',monospace",fontSize:12}}>{it.rate}</span></p>
+                      <p style={{color:C.dim,fontSize:9,marginTop:1,lineHeight:1.5}}>{it.d}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ PROJECTIONS ══ */}
+        {tab==="projections"&&(
+          <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"3fr 1fr",gap:14}}>
+              <div className="card">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                  <Lbl style={{marginBottom:0}}>Net Worth Projection</Lbl>
+                  <div style={{display:"flex",gap:5}}>
+                    {[24,36,48,60].map(mo=>(
+                      <button key={mo} className="btn" onClick={()=>setHM(mo)} style={{border:`1px solid ${horizonMonths===mo?C.gold:C.border}`,color:horizonMonths===mo?C.gold:C.muted,background:horizonMonths===mo?`${C.gold}15`:"transparent"}}>{mo/12}yr</button>
+                    ))}
+                  </div>
+                </div>
+                <SVGLineChart data={merged}/>
+                <div style={{display:"flex",gap:16,marginTop:8,justifyContent:"center"}}>
+                  {[["Bull",C.green,"4 2"],["Base",C.gold,null],["Bear",C.red,"4 2"]].map(([n,c,d])=>(
+                    <div key={n} style={{display:"flex",alignItems:"center",gap:5}}>
+                      <svg width={22} height={2} style={{overflow:"visible"}}><line x1="0" y1="1" x2="22" y2="1" stroke={c} strokeWidth="2" strokeDasharray={d||"none"}/></svg>
+                      <span className="lbl" style={{marginBottom:0,color:c}}>{n}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {[["Bull",fBull,C.green],["Base",fBase,C.gold],["Bear",fBear,C.red]].map(([s,v,c])=>(
+                  <div key={s} className="card" style={{flex:1,border:`1px solid ${c}30`}}>
+                    <p className="lbl">{s} {endYear}</p>
+                    <p className="num-bold" style={{color:c,fontSize:24,lineHeight:1,marginBottom:3}}>{fmtK(v)}</p>
+                    <p className="lbl" style={{marginBottom:6}}>DKK</p>
+                    <div style={{height:2,background:C.dim,borderRadius:1}}>
+                      <div style={{height:"100%",width:`${Math.min((v/target)*100,100)}%`,background:c,borderRadius:1,transition:"width 0.4s"}}/>
+                    </div>
+                    <p style={{color:C.dim,fontSize:9,marginTop:3,fontFamily:"'JetBrains Mono',monospace"}}>{Math.round((v/target)*100)}% of 1M target</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+              <div className="card"><Lbl>Equity CAGR Assumptions</Lbl><Slider label="Bear case" value={a.bearEquity} onChange={v=>upA("bearEquity",v)} min={0} max={15} color={C.red}/><Slider label="Base case" value={a.baseEquity} onChange={v=>upA("baseEquity",v)} min={0} max={20} color={C.gold}/><Slider label="Bull case" value={a.bullEquity} onChange={v=>upA("bullEquity",v)} min={0} max={30} color={C.green}/></div>
+              <div className="card"><Lbl>Bitcoin Cycle Multiplier (month 24)</Lbl><Slider label="Bear" value={a.bearBTC} onChange={v=>upA("bearBTC",v)} min={0.2} max={2} step={0.1} suffix="×" color={C.red}/><Slider label="Base" value={a.baseBTC} onChange={v=>upA("baseBTC",v)} min={0.5} max={5} step={0.1} suffix="×" color={C.gold}/><Slider label="Bull" value={a.bullBTC} onChange={v=>upA("bullBTC",v)} min={1} max={10} step={0.1} suffix="×" color={C.green}/></div>
+              <div className="card"><Lbl>MSTR Cycle Multiplier (month 24)</Lbl><Slider label="Bear" value={a.bearMSTR} onChange={v=>upA("bearMSTR",v)} min={0.1} max={2} step={0.1} suffix="×" color={C.red}/><Slider label="Base" value={a.baseMSTR} onChange={v=>upA("baseMSTR",v)} min={0.5} max={8} step={0.1} suffix="×" color={C.gold}/><Slider label="Bull" value={a.bullMSTR} onChange={v=>upA("bullMSTR",v)} min={1} max={15} step={0.1} suffix="×" color={C.green}/></div>
+            </div>
+            <div className="card">
+              <Lbl>Monthly Flow Assumptions</Lbl>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+                <NInput label="ASK monthly" value={a.askMonthly} onChange={v=>upA("askMonthly",v)} color={C.gold}/>
+                <NInput label="Nordnet pension" value={a.pensionMonthly} onChange={v=>upA("pensionMonthly",v)} color={C.ice}/>
+                <NInput label="Employer pension" value={a.employerPension} onChange={v=>upA("employerPension",v)} color={C.ice}/>
+                <NInput label="Apartment top-up" value={a.apartmentMonthly} onChange={v=>upA("apartmentMonthly",v)} color={C.violet}/>
+                <NInput label="ASK lifetime limit" value={a.askTotalLimit} onChange={v=>upA("askTotalLimit",v)} color={C.gold}/>
+              </div>
+              <div style={{marginTop:8,background:C.bg,borderRadius:7,padding:"7px 10px"}}>
+                <p className="lbl" style={{marginBottom:0}}>ASK limit is a one-time lifetime cap (174,200 DKK). Internal reallocations are always free and never count against it.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ INCOME ══ */}
+        {tab==="income"&&(
+          <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:14}}>
+            <SalaryHistory salaryHistory={salaryHistory} setSalaryHistory={setSalaryHistory}/>
+            <FreelanceHistory freelanceHistory={freelanceHistory} setFreelanceHistory={setFreelanceHistory}/>
+            <div className="card">
+              <Lbl>Combined Income Summary</Lbl>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+                {[{l:"Salary Savings Rate",v:savRate+"%",sub:"excl. freelance",c:C.ice},{l:"Effective Savings Rate",v:effRate+"%",sub:"incl. freelance",c:C.green}].map((m,i)=>(
+                  <div key={i} style={{background:C.bg,borderRadius:8,padding:"14px 16px",border:`1px solid ${C.border}`}}>
+                    <p className="lbl" style={{marginBottom:5}}>{m.l}</p>
+                    <p className="num-bold" style={{color:m.c,fontSize:38,lineHeight:1}}>{m.v}</p>
+                    <p className="lbl" style={{marginTop:5,marginBottom:6}}>{m.sub}</p>
+                    <div style={{height:2,background:C.dim,borderRadius:1}}><div style={{height:"100%",width:`${Math.min(parseInt(m.v),100)}%`,background:m.c,borderRadius:1,transition:"width 0.4s"}}/></div>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+                {[{l:"Annual Salary",v:fmt(annSal)+" DKK",c:C.green},{l:"Annual Freelance",v:curFL>0?fmt(curFL)+" DKK":"—",c:C.violet},{l:"Total Income",v:fmt(totalInc)+" DKK",c:C.text},{l:"Annual Invested",v:fmt(annInv)+" DKK",c:C.gold}].map((m,i)=>(
+                  <div key={i} style={{background:C.bg,borderRadius:7,padding:"10px 12px",border:`1px solid ${C.border}`}}>
+                    <p className="lbl">{m.l}</p>
+                    <p className="num" style={{color:m.c,fontSize:17}}>{m.v}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══ STRATEGY ══ */}
+        {tab==="strategy"&&(
+          <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+              <div className="card card-gold">
+                <Lbl>3-Question Decision Filter</Lbl>
+                {[
+                  {q:"Tax vehicle",a:"ASK (17%) → Pension (15.3%) → Taxable stocks (realisationsprincip). ETFs never in taxable accounts."},
+                  {q:"Probability sizing",a:"Consistent with 1M target? Not emotional state or recent price action? Does it fit probability optimisation, not loss recovery?"},
+                  {q:"Duplication check",a:"Compounds existing exposures or replicates SEMI/BTC/tech risk? ACWI IMI is the only true diversifier in the stack."},
+                ].map((it,i)=>(
+                  <div key={i} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:8,padding:"11px 13px",marginBottom:8,display:"flex",gap:10}}>
+                    <div style={{width:20,height:20,borderRadius:"50%",background:C.goldDim,border:`1px solid ${C.gold}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <span style={{color:C.gold,fontSize:10,fontFamily:"'JetBrains Mono',monospace"}}>{i+1}</span>
+                    </div>
+                    <div>
+                      <p style={{color:C.gold,fontSize:11,marginBottom:3}}>{it.q}</p>
+                      <p style={{color:C.muted,fontSize:9,lineHeight:1.65}}>{it.a}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="card">
+                <Lbl>Macro Thesis 2026–2030</Lbl>
+                {[
+                  {title:"Bitcoin Post-Halving Cycle",c:C.gold,d:"DCA accumulation during contraction. Harvest at exit targets. Never sell all. Hard cap 40% NW. Atreidis is the binary entry/exit gate."},
+                  {title:"AI Infrastructure Supercycle",c:C.ice,d:"Infrastructure layer: chips, compute, power. Not application. Hyperscalers funding via operating cash flow — not debt. CapEx intensity <70% of FCF vs >150% in dot-com. No crisis analogue."},
+                  {title:"Semiconductor Cycle",c:C.gold,d:"SEMI thesis depends on: ISM expansion + Korea exports positive + SOX outperforming. AI capex + bonus depreciation + eSLR creating capex window. Watch China demand recovery for memory cycle."},
+                  {title:"Steno Liquidity Framework",c:C.teal,d:"Liquidity-first regime analysis. SOFR-EFFR normalisation = leverage re-entry window. Hormuz resolution = re-grossing event. US domestic liquidity improving despite geopolitical noise."},
+                ].map((it,i)=>(
+                  <div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:i<3?`1px solid ${C.border}`:"none"}}>
+                    <div style={{width:2,alignSelf:"stretch",background:it.c,borderRadius:2,flexShrink:0}}/>
+                    <div><p style={{color:C.text,fontSize:11,marginBottom:3}}>{it.title}</p><p style={{color:C.muted,fontSize:9,lineHeight:1.65}}>{it.d}</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card">
+              <Lbl>Risk Framework &amp; Circuit Breakers</Lbl>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:9}}>
+                {[
+                  {r:"BTC Oversizing",t:"BTC > 40% investable NW",a:"Pause DCA immediately. Rebalance.",sev:"high"},
+                  {r:"Hormuz Prolonged",t:"Day 35+: sulfuric acid / Day 45+: helium",a:"Hard-cap SEMI at 5% regardless of regime score. Pause expansion.",sev:"high"},
+                  {r:"Tax Surprise",t:"BTC doubles in-year (lagerprincip risk)",a:"Maintain 6-month tax reserve. Never fully deploy capital.",sev:"high"},
+                  {r:"Cliff Edge Window",t:"Oct–Dec 2026: cycle peak + apartment purchase",a:"Atreidis red must be respected. Do not override for FOMO.",sev:"high"},
+                  {r:"Income Disruption",t:"Income −30%+ for 3+ months",a:"Reduce to 8,000 DKK/mo minimum. Preserve cash runway.",sev:"medium"},
+                  {r:"Emotional Re-entry",t:"High mNAV vehicles, altcoins, FOMO",a:"3-question filter. One fail = hard reject. No exceptions.",sev:"medium"},
+                ].map((it,i)=>(
+                  <div key={i} style={{background:C.bg,border:`1px solid ${it.sev==="high"?`${C.red}35`:`${C.gold}20`}`,borderRadius:8,padding:"11px 13px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                      <p style={{color:C.text,fontSize:11}}>{it.r}</p>
+                      <Pill label={it.sev.toUpperCase()} color={it.sev==="high"?C.red:C.amber}/>
+                    </div>
+                    <p style={{color:C.dim,fontSize:9,marginBottom:5,lineHeight:1.5}}>Trigger: {it.t}</p>
+                    <p style={{color:C.ice,fontSize:9,lineHeight:1.5}}>→ {it.a}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card" style={{border:`1px solid ${C.gold}50`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <Lbl style={{marginBottom:0}}>Atreidis Indicator — MSTR Entry System</Lbl>
+                <div style={{display:"flex",alignItems:"center",gap:8,background:`${C.amber}15`,padding:"4px 12px",borderRadius:20,border:`1px solid ${C.goldDim}`}}>
+                  <Dot color={C.amber} pulse={true}/>
+                  <span style={{color:C.amber,fontSize:9,fontFamily:"'JetBrains Mono',monospace",fontWeight:600}}>YELLOW — CAUTION</span>
+                </div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:9,marginBottom:12}}>
+                {[
+                  {n:"3-Day OBV",d:"Volume on-balance. 2 consecutive green confirmations required for entry.",s:"WATCHING"},
+                  {n:"Norm. MACD",d:"Momentum. Above 50 waives 2nd OBV confirmation requirement.",s:"WATCHING"},
+                  {n:"120-Day SMA",d:"Price vs 120-day MA. Cross above = immediate green signal.",s:"BELOW SMA"},
+                  {n:"BTC Core Risk",d:"(BTCMC−BTCMCR)/stddev. Above 95 triggers yellow. CoinMetrics on-chain.",s:"MONITORING"},
+                ].map((f,i)=>(
+                  <div key={i} style={{background:C.bg,borderRadius:7,padding:"10px 12px",border:`1px solid ${C.border}`}}>
+                    <p style={{color:C.gold,fontSize:10,marginBottom:4}}>{f.n}</p>
+                    <p style={{color:C.dim,fontSize:9,marginBottom:7,lineHeight:1.6}}>{f.d}</p>
+                    <Pill label={f.s} color={C.muted}/>
+                  </div>
+                ))}
+              </div>
+              <div style={{background:C.bg,borderRadius:7,padding:"9px 12px",borderLeft:`2px solid ${C.gold}`}}>
+                <p className="lbl" style={{marginBottom:3}}>Dual-Key Entry Protocol</p>
+                <p style={{color:C.muted,fontSize:9,lineHeight:1.7}}>Atreidis green is necessary but not sufficient alone. Dual-key confirmation: <span style={{color:C.gold}}>Atreidis green</span> + <span style={{color:C.ice}}>liquidity above threshold (~5.9T reserves)</span> + <span style={{color:C.teal}}>Korea exports positive (SEMI expansion)</span>. Sizing: ~15K DKK first signal in bear market → ~20K next → ~15K once early bull confirmed.</p>
+              </div>
+            </div>
+
+            <div className="card">
+              <Lbl>Phase Roadmap 2026–2030</Lbl>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:0}}>
+                {[
+                  {phase:"Phase 1: Accumulation",period:"2026–2027",c:C.gold,items:["ASK autopilot: ACWI + NASDAQ-100 monthly","MSTR: await Atreidis dual-key green","BTC: post-ASK limit DCA","Apartment reserve: 200k → 800k combined","Staged SEMI: regime-gated expansion"]},
+                  {phase:"Phase 2: Cycle Execution",period:"2027 (apartment close)",c:C.violet,items:["Harvest MSTR/BTC at exit targets","Rotate proceeds to ACWI IMI in ASK","Atreidis red = hard exit — no override","Apartment purchase: +5,500–6,500 DKK/mo housing","Reassess SEMI allocation post-purchase"]},
+                  {phase:"Phase 3: Compound",period:"2027–2030",c:C.teal,items:["Post-apartment compounding engine","ASK: ACWI IMI base + selective satellites","Pension: long-duration SEMI tilt intact","Freelance capital: ASK → BTC cycle repeats","Target: 1M DKK personal NW by 2030"]},
+                ].map((ph,i,arr)=>(
+                  <div key={i} style={{padding:"16px 18px",borderRight:i<arr.length-1?`1px solid ${C.border}`:"none",position:"relative"}}>
+                    <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:ph.c}}/>
+                    <p style={{color:ph.c,fontSize:10,fontFamily:"'JetBrains Mono',monospace",fontWeight:600,marginBottom:2}}>{ph.phase}</p>
+                    <p className="lbl" style={{marginBottom:10}}>{ph.period}</p>
+                    {ph.items.map((it,j)=>(
+                      <div key={j} style={{display:"flex",gap:6,marginBottom:5}}>
+                        <span style={{color:ph.c,fontSize:9,flexShrink:0,marginTop:1}}>›</span>
+                        <p style={{color:C.muted,fontSize:9,lineHeight:1.55}}>{it}</p>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+try{
+  const root=ReactDOM.createRoot(document.getElementById('root'));
+  root.render(<App/>);
+}catch(e){
+  document.getElementById('root').innerHTML='<div style="color:#b44650;font-family:monospace;padding:40px;background:#07090f;min-height:100vh"><h2 style="margin-bottom:16px">Error</h2><pre style="white-space:pre-wrap;font-size:11px">'+e.stack+'</pre></div>';
+}
+</script>
+<script>
+window.addEventListener('error',function(e){
+  if(document.getElementById('root').innerHTML===''){
+    document.getElementById('root').innerHTML='<div style="color:#b44650;font-family:monospace;padding:40px;background:#07090f;min-height:100vh"><h2>Script error</h2><pre style="margin-top:10px">'+e.message+' at line '+e.lineno+'</pre></div>';
+  }
+});
+</script>
+</body>
+</html>
